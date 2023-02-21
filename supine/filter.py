@@ -50,6 +50,7 @@ class DataclassFilterMixin:
         """require subclasses to be dataclasses"""
         if not dataclasses.is_dataclass(cls):
             raise ValueError(f'{cls!r} must be marked as a @dataclass')
-        if not kwargs:
+        # noinspection PyUnresolvedReferences,PyProtectedMember
+        if not getattr(cls, dataclasses._FIELDS):
             raise ValueError(f'No dataclass fields defined on {cls!r}')
-        return super().__new__(cls)
+        return super().__new__(cls, *args)
