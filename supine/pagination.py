@@ -1,5 +1,5 @@
 from pydantic import conint
-from sqlalchemy import Select, func
+from sqlalchemy import func, Select
 
 
 class Pagination:

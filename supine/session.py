@@ -1,12 +1,12 @@
 from functools import lru_cache
 
 import sqlalchemy
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 
 @lru_cache
 def get_engine():
-    return sqlalchemy.create_engine('sqlite://')
+    return sqlalchemy.create_engine("sqlite://")
 
 
 @lru_cache()
@@ -24,6 +24,7 @@ def make_session_factory(sessionmaker):
 
     rolls back any transaction not committed during your path operation
     """
+
     def inner() -> Session:
         session = sessionmaker()
         try:

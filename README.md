@@ -50,7 +50,7 @@ class CustomerOrm(OrmBase):
     last_name: Mapper[str] = sqlalchemy.Column(sqlalchemy.String(256))
 
 
-# Pydantic De/Serialization Model 
+# Pydantic De/Serialization Model
 class Customer(OrmModeBaseModel):
     """A basic customer. Belongs to one territory"""
     customer_id: int

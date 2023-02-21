@@ -11,7 +11,7 @@ def exclude_none(d: list[tuple[str, Any]]) -> dict:
     filters out "private" keys beginning with "_"
     filters out values equal to None
     """
-    return {k: v for (k, v) in d if v is not None and k[0] != '_'}
+    return {k: v for (k, v) in d if v is not None and k[0] != "_"}
 
 
 class Filter:
@@ -43,14 +43,14 @@ class DataclassFilterMixin:
         return results
 
     def __init__(self):
-        if not getattr(self, '__fields__', None):
-            raise ValueError('you should define dataclass fields when using this mixin')
+        if not getattr(self, "__fields__", None):
+            raise ValueError("you should define dataclass fields when using this mixin")
 
     def __new__(cls, *args, **kwargs):
         """require subclasses to be dataclasses"""
         if not dataclasses.is_dataclass(cls):
-            raise ValueError(f'{cls!r} must be marked as a @dataclass')
+            raise ValueError(f"{cls!r} must be marked as a @dataclass")
         # noinspection PyUnresolvedReferences,PyProtectedMember
         if not getattr(cls, dataclasses._FIELDS):
-            raise ValueError(f'No dataclass fields defined on {cls!r}')
+            raise ValueError(f"No dataclass fields defined on {cls!r}")
         return super().__new__(cls, *args)
