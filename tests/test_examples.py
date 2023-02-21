@@ -34,6 +34,10 @@ def test_get_customer_not_found(client):
     response = client.get("/customer/2")
     with pytest.raises(HTTPStatusError, match="404"):
         response.raise_for_status()
+    assert response.json() == {
+        "status": "error",
+        "detail": "specified customer not found",
+    }
 
 
 def test_get_customer_expanded(client):

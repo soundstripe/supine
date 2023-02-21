@@ -25,7 +25,12 @@ class PaginationData(BaseModel):
 
 
 class ApiError(BaseModel):
-    msg: str
+    detail: str
+    status: ApiResponseStatus = ApiResponseStatus.error
+
+    @classmethod
+    def from_exc(cls, exc):
+        return cls(detail=exc.detail)
 
 
 class ApiResponse(GenericModel, Generic[Result]):

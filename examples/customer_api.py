@@ -6,8 +6,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from sqlalchemy import StaticPool
 from sqlalchemy.orm import Mapper
+from starlette.exceptions import HTTPException
 
 from supine.base_model import OrmModeBaseModel
+from supine.exception_handler import supine_http_exception_handler
 from supine.filter import DataclassFilterMixin, Filter
 from supine.resource import Resource
 
@@ -106,6 +108,7 @@ territory_resource = Resource(
 )
 
 app = FastAPI()
+app.add_exception_handler(HTTPException, supine_http_exception_handler)
 
 supine_router = SupineRouter(default_session_factory=session_factory)
 get_customer = supine_router.include_get_resource_by_id(customer_resource)
