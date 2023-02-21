@@ -9,17 +9,21 @@ class Pagination:
         self._count = None
         self._total_count = None
 
-    def paginate_query(self, query: Select):
-        self._total_count = query.count()
-        return query.offset(self.start).limit(self.count)
-
     def fetch_paginated(self, session, query: Select):
-        self._total_count = session.scalar(
-            query.with_only_columns(func.count(), maintain_column_froms=True)
-        )
-        results = session.scalars(query).fetchall()
+        self._total_count = self._query_count(query, session)
+        results = self._query_results(query, session)
         self._count = len(results)
         return results
+
+    @staticmethod
+    def _query_results(query, session):
+        return session.scalars(query).fetchall()
+
+    @staticmethod
+    def _query_count(query, session):
+        return session.scalar(
+            query.with_only_columns(func.count(), maintain_column_froms=True)
+        )
 
     @property
     def count(self):
