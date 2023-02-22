@@ -70,6 +70,10 @@ class SupineRouter(fastapi.routing.APIRouter):
         )
 
     def session(self):
+        """
+        fastapi.Depends()-compatible function to provide a sqlalchemy session
+        which rolls back on error
+        """
         session = self.sqlalchemy_sessionmaker()
         try:
             yield session
