@@ -1,17 +1,12 @@
 import dataclasses
 import warnings
 from functools import cached_property
-from itertools import chain
 from typing import Callable, List, Type, Union
 
-from fastapi import Depends, HTTPException, Query
 from pydantic import BaseModel, create_model
-from sqlalchemy.orm import InstrumentedAttribute, joinedload, Session
-from starlette.status import HTTP_404_NOT_FOUND
 
 from supine.api_response import ApiResponse, PaginatedResponse
 from supine.filter import Filter
-
 
 _resource_registry = {}
 
@@ -39,6 +34,10 @@ class Resource:
     expansions: List[Union["Resource", str]] = dataclasses.field(
         default_factory=list
     )  # a list of Resources this Resource may reference
+
+    etag_attr: str = None
+    last_modified_attr: str = None
+    max_age: int = 0  # max cache age in seconds
 
     def __post_init__(self):
         self.register()

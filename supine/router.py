@@ -1,4 +1,6 @@
+import hashlib
 import warnings
+from datetime import datetime
 from enum import Enum
 from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
@@ -11,9 +13,10 @@ from fastapi.utils import generate_unique_id
 from sqlalchemy import select
 from sqlalchemy.orm import InstrumentedAttribute, joinedload, Session
 from starlette import routing
+from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import BaseRoute
-from starlette.status import HTTP_404_NOT_FOUND
+from starlette.status import HTTP_304_NOT_MODIFIED, HTTP_404_NOT_FOUND
 from starlette.types import ASGIApp
 
 from supine.api_response import ApiResponse, ApiResponseStatus
@@ -66,6 +69,32 @@ class SupineRouter(fastapi.routing.APIRouter):
             generate_unique_id_function=generate_unique_id_function,
         )
 
+    @staticmethod
+    def set_cache_headers(
+        request: Request,
+        response: Response,
+        max_age=0,
+        etag=None,
+        last_modified: datetime = None,
+    ):
+        if last_modified:
+            rfc9110_date = "%a, %d %b %Y %H:%M:%S GMT"
+            last_modified = last_modified.strftime(rfc9110_date)
+            print(last_modified)
+
+        if etag and request.headers.get("if-none-match", None) == etag:
+            raise HTTPException(HTTP_304_NOT_MODIFIED)
+        if last_modified and request.headers.get("if-modified-since", None):
+            raise HTTPException(HTTP_304_NOT_MODIFIED)
+
+        response.headers[
+            "cache-control"
+        ] = f"private, must-revalidate, max-age={max_age}"
+        if etag:
+            response.headers["etag"] = etag
+        if last_modified:
+            response.headers["last-modified"] = last_modified
+
     def include_get_resource_by_id(self, resource: Resource):
         @self.get(
             f"/{resource.singular_name}/{{key}}",
@@ -74,6 +103,8 @@ class SupineRouter(fastapi.routing.APIRouter):
             name=f"get_{resource.singular_name}",
         )
         def get_obj(
+            request: Request,
+            response: Response,
             obj: resource.orm_class = Depends(self.make_resource_getter(resource)),
             expand: bool = Query(
                 False,
@@ -88,6 +119,21 @@ class SupineRouter(fastapi.routing.APIRouter):
                         for expansion in resource.runtime_expansions
                     }
                 )
+
+            etag = getattr(obj, resource.etag_attr) if resource.etag_attr else None
+            last_modified = (
+                getattr(obj, resource.last_modified_attr)
+                if resource.last_modified_attr
+                else None
+            )
+            max_age = resource.max_age
+            self.set_cache_headers(
+                request,
+                response,
+                max_age=max_age,
+                etag=etag,
+                last_modified=last_modified,
+            )
 
             return resource.result(status=ApiResponseStatus.success, result=results)
 
