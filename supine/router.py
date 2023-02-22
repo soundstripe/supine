@@ -183,7 +183,7 @@ class SupineRouter(fastapi.routing.APIRouter):
     def include_create_resource(self, resource):
         if resource.create_params is None:
             raise ValueError(
-                f"must set {type(resource)}.create_params to include this route"
+                f"must set {resource!r}.create_params to include this route"
             )
 
         @self.post(
@@ -209,7 +209,7 @@ class SupineRouter(fastapi.routing.APIRouter):
     def include_update_resource(self, resource):
         if resource.update_params is None:
             raise ValueError(
-                f"must set {type(resource)}.update_params to include this route"
+                f"must set {resource!r}.update_params to include this route"
             )
 
         @self.patch(
