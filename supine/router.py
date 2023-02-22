@@ -47,9 +47,9 @@ class SupineRouter(fastapi.routing.APIRouter):
         generate_unique_id_function: Callable[[APIRoute], str] = Default(
             generate_unique_id
         ),
-        default_session_factory=None,
+        sqlalchemy_sessionmaker=None,
     ) -> None:
-        self.default_session_factory = default_session_factory
+        self.sqlalchemy_sessionmaker = sqlalchemy_sessionmaker
         super().__init__(
             prefix=prefix,
             tags=tags,
@@ -68,6 +68,16 @@ class SupineRouter(fastapi.routing.APIRouter):
             include_in_schema=include_in_schema,
             generate_unique_id_function=generate_unique_id_function,
         )
+
+    def session(self):
+        session = self.sqlalchemy_sessionmaker()
+        try:
+            yield session
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
     @staticmethod
     def set_cache_headers(
@@ -149,7 +159,7 @@ class SupineRouter(fastapi.routing.APIRouter):
         def get_objects(
             pagination: Pagination = Depends(),
             query_filter: DataclassFilterMixin = Depends(resource.query_filter),
-            session: Session = Depends(self.default_session_factory),
+            session: Session = Depends(self.session),
         ):
             query = select(resource.orm_class)
             if query_filter is not None:
@@ -180,7 +190,7 @@ class SupineRouter(fastapi.routing.APIRouter):
         )
         def create_object(
             create_params: resource.create_params = Body(),
-            session: Session = Depends(self.default_session_factory),
+            session: Session = Depends(self.session),
         ):
             obj = resource.orm_class(**create_params.dict())
             session.add(obj)
@@ -207,7 +217,7 @@ class SupineRouter(fastapi.routing.APIRouter):
         def update_object(
             obj: resource.orm_class = Depends(self.make_resource_getter(resource)),
             update_params: resource.update_params = Body(),
-            session: Session = Depends(self.default_session_factory),
+            session: Session = Depends(self.session),
         ):
             for attr_name, val in update_params.dict(exclude_unset=True).items():
                 setattr(obj, attr_name, val)
@@ -224,9 +234,7 @@ class SupineRouter(fastapi.routing.APIRouter):
             response_model_exclude_unset=True,
             name=f"delete_{resource.singular_name}",
         )
-        def delete_object(
-            key: int, session: Session = Depends(self.default_session_factory)
-        ):
+        def delete_object(key: int, session: Session = Depends(self.session)):
             obj = session.get(resource.orm_class, key)
             if obj is None:
                 raise HTTPException(
@@ -251,7 +259,7 @@ class SupineRouter(fastapi.routing.APIRouter):
         def inner(
             key: int,
             expand: bool = Query(False),
-            session: Session = Depends(self.default_session_factory),
+            session: Session = Depends(self.session),
         ):
             expansion_loader_options = []
             if expand:

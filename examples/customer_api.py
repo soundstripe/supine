@@ -14,14 +14,12 @@ from supine.filter import DataclassFilterMixin, Filter
 from supine.resource import Resource
 
 from supine.router import SupineRouter
-from supine.session import make_session_factory
 
 engine = sqlalchemy.create_engine(
     "sqlite://?check_same_thread=False", poolclass=StaticPool, echo=True
 )
 S = sqlalchemy.orm.sessionmaker(bind=engine)
 OrmBase = sqlalchemy.orm.declarative_base()
-session_factory = make_session_factory(S)
 
 
 class TerritoryOrm(OrmBase):
@@ -110,7 +108,7 @@ territory_resource = Resource(
 app = FastAPI()
 app.add_exception_handler(HTTPException, supine_http_exception_handler)
 
-supine_router = SupineRouter(default_session_factory=session_factory)
+supine_router = SupineRouter(sqlalchemy_sessionmaker=S)
 get_customer = supine_router.include_get_resource_by_id(customer_resource)
 get_customers = supine_router.include_get_resource_list(customer_resource)
 create_customer = supine_router.include_create_resource(customer_resource)

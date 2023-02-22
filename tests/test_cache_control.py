@@ -33,7 +33,7 @@ def session():
 
 @pytest.fixture()
 def supine_router(session):
-    return SupineRouter(default_session_factory=lambda: session)
+    return SupineRouter(sqlalchemy_sessionmaker=lambda: session)
 
 
 @pytest.fixture()

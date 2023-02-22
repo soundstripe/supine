@@ -41,6 +41,7 @@ S = sessionmaker(bind=engine)
 OrmBase = sqlalchemy.orm.declarative_base()
 session_factory = make_session_factory()
 
+
 # SQLAlchemy ORM Model
 class CustomerOrm(OrmBase):
     __tablename__ = 'customer'
@@ -75,7 +76,7 @@ with S.begin() as session:
     ])
 
 # SupineRouter is a standard FastAPI APIRouter with some helpers
-supine_router = SupineRouter(default_session_factory=session_factory)
+supine_router = SupineRouter(sqlalchemy_sessionmaker=session_factory)
 
 # Register `/customer/{key}` to get a single customer
 # The `get_customer` variable is simply to improve your code's searchability
