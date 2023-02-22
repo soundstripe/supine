@@ -32,40 +32,34 @@ In Supine, you define Resources which usually correlate to your database tables.
 Pardon the slightly long example, but Supine is not meant for "toy" projects. You will still need to define your orm model, de/serialization model, models for create/update parameters, and a model for filtering lists of your Resources.
 
 ```python
-from supine import SupineRouter
+import sqlalchemy.orm
+
+from fastapi import FastAPI
+from supine import SupineRouter, OrmModeBaseModel, Resource
 
 # Setup app and SQLAlchemy engine as usual
 app = FastAPI()
 engine = sqlalchemy.create_engine()
-S = sessionmaker(bind=engine)
+S = sqlalchemy.orm.sessionmaker(bind=engine)
 OrmBase = sqlalchemy.orm.declarative_base()
-session_factory = make_session_factory()
 
 
-# SQLAlchemy ORM Model
+# Normal SQLAlchemy ORM Model
 class CustomerOrm(OrmBase):
     __tablename__ = 'customer'
 
-    customer_id: Mapper[int] = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    first_name: Mapper[str] = sqlalchemy.Column(sqlalchemy.String(256))
-    last_name: Mapper[str] = sqlalchemy.Column(sqlalchemy.String(256))
+    customer_id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    first_name = sqlalchemy.Column(sqlalchemy.String(256))
+    last_name = sqlalchemy.Column(sqlalchemy.String(256))
 
 
-# Pydantic De/Serialization Model
+# Normal Pydantic De/Serialization Model
 class Customer(OrmModeBaseModel):
     """A basic customer. Belongs to one territory"""
     customer_id: int
     first_name: str
     last_name: str
 
-
-# Supine Resource (dataclass) to tie everything together
-customer_resource = Resource(
-    singular_name='customer',
-    plural_name='customers',
-    orm_class=CustomerOrm,
-    model=Customer,
-)
 
 # Sample Data
 with S.begin() as session:
@@ -75,8 +69,16 @@ with S.begin() as session:
         CustomerOrm(first_name='John', last_name='Watson'),
     ])
 
+# Supine Resource (dataclass) to tie everything together
+customer_resource = Resource(
+    singular_name='customer',
+    plural_name='customers',
+    orm_class=CustomerOrm,
+    model=Customer,
+)
+
 # SupineRouter is a standard FastAPI APIRouter with some helpers
-supine_router = SupineRouter(sqlalchemy_sessionmaker=session_factory)
+supine_router = SupineRouter(sqlalchemy_sessionmaker=S)
 
 # Register `/customer/{key}` to get a single customer
 # The `get_customer` variable is simply to improve your code's searchability
@@ -88,6 +90,7 @@ get_customers = supine_router.include_get_resource_list(customer_resource)
 app.include_router(supine_router)
 
 if __name__ == '__main__':
+    import uvicorn
     uvicorn.run(app, host='127.0.0.1', port=8000)
 
 ```
