@@ -134,22 +134,24 @@ class SupineRouter(APIRouter):
         def get_obj(
             request: Request,
             response: Response,
-            obj: resource.orm_class = Depends(self.make_resource_getter(resource)),
+            orm_instance: resource.orm_class = Depends(
+                self.make_resource_getter(resource)
+            ),
             expand: bool = Query(
                 False,
                 description="If true, related objects will be returned along with the primary result.",
             ),
         ):
-            results = {resource.singular_name: obj}
+            results = {resource.singular_name: orm_instance}
             if expand:
-                results.update(resource.get_expansion_dict(obj))
+                results.update(resource.get_expansion_dict(orm_instance))
 
             self.set_cache_headers(
                 request,
                 response,
                 max_age=resource.max_age,
-                etag=resource.etag(obj),
-                last_modified=resource.last_modified(obj),
+                etag=resource.etag(orm_instance),
+                last_modified=resource.last_modified(orm_instance),
             )
 
             return resource.result(status=ApiResponseStatus.success, result=results)
@@ -172,13 +174,13 @@ class SupineRouter(APIRouter):
             query = select(resource.orm_class)
             if query_filter is not None:
                 query = query_filter.modify_query(query)
-            results = pagination.fetch_paginated(session, query)
+            orm_instances = pagination.fetch_paginated(session, query)
             if query_filter is not None:
-                results = query_filter.modify_results(results)
+                orm_instances = query_filter.modify_results(orm_instances)
 
             return resource.list_result(
                 status=ApiResponseStatus.success,
-                result={resource.plural_name: results},
+                result={resource.plural_name: orm_instances},
                 pagination=pagination,
             )
 
@@ -201,12 +203,12 @@ class SupineRouter(APIRouter):
             create_params: resource.create_params = Body(),
             session: Session = Depends(self.session),
         ):
-            obj = resource.orm_class(**create_params.dict())
-            session.add(obj)
+            orm_instance = resource.orm_class(**create_params.dict())
+            session.add(orm_instance)
             session.commit()
             return resource.result(
                 status=ApiResponseStatus.success,
-                result={resource.singular_name: obj},
+                result={resource.singular_name: orm_instance},
             )
 
         return create_object
@@ -225,16 +227,18 @@ class SupineRouter(APIRouter):
             tags=[resource.plural_name],
         )
         def update_object(
-            obj: resource.orm_class = Depends(self.make_resource_getter(resource)),
+            orm_instance: resource.orm_class = Depends(
+                self.make_resource_getter(resource)
+            ),
             update_params: resource.update_params = Body(),
             session: Session = Depends(self.session),
         ):
             for attr_name, val in update_params.dict(exclude_unset=True).items():
-                setattr(obj, attr_name, val)
+                setattr(orm_instance, attr_name, val)
             session.commit()
             return resource.result(
                 status=ApiResponseStatus.success,
-                result={resource.singular_name: obj},
+                result={resource.singular_name: orm_instance},
             )
 
     def include_delete_resource(self, resource):
@@ -246,13 +250,13 @@ class SupineRouter(APIRouter):
             tags=[resource.plural_name],
         )
         def delete_object(key: int, session: Session = Depends(self.session)):
-            obj = session.get(resource.orm_class, key)
-            if obj is None:
+            orm_instance = session.get(resource.orm_class, key)
+            if orm_instance is None:
                 raise HTTPException(
                     HTTP_404_NOT_FOUND, f"specified {resource.singular_name} not found"
                 )
 
-            session.delete(obj)
+            session.delete(orm_instance)
             session.commit()
             return ApiResponse(status=ApiResponseStatus.success)
 
@@ -293,6 +297,10 @@ class SupineRouter(APIRouter):
 
 
 def generate_joinedloads(orm_class, attr_or_name):
+    """
+    if attr_or_name represents at least one relationship, generates joinedload() query options to load
+    the relationship(s)
+    """
     attr = attr_or_name
     if isinstance(attr_or_name, str):
         attr = getattr(orm_class, attr_or_name, None)
