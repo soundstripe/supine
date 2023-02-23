@@ -123,13 +123,13 @@ class Resource:
             for expansion in self.expansions
         }
 
-    def etag(self, orm_instance) -> str:
+    def etag(self, orm_instance) -> Union[str, None]:
         """return resource etag given an orm_class instance"""
         if self.etag_attr is None:
             return None
         return getattr(orm_instance, self.etag_attr)
 
-    def last_modified(self, orm_instance) -> datetime:
+    def last_modified(self, orm_instance) -> Union[datetime, None]:
         """return resource last modified datetime given an orm_class instance"""
         if self.last_modified_attr is None:
             return None
