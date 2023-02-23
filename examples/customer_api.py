@@ -22,6 +22,9 @@ S = sqlalchemy.orm.sessionmaker(bind=engine)
 OrmBase = sqlalchemy.orm.declarative_base()
 
 
+# ORM MODELS ##################################################################
+
+
 class TerritoryOrm(OrmBase):
     __tablename__ = "territory"
     territory_id: Mapper[int] = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
@@ -42,6 +45,9 @@ class CustomerOrm(OrmBase):
     territories = sqlalchemy.orm.relationship(
         TerritoryOrm, uselist=True, overlaps="territory"
     )
+
+
+# RESPONSE AND PARAM MODELS ###################################################
 
 
 class Customer(OrmModeBaseModel):
@@ -72,6 +78,9 @@ class Territory(OrmModeBaseModel):
     name: str
 
 
+# FILTER MODELS ###############################################################
+
+
 @dataclasses.dataclass
 class CustomerFilter(DataclassFilterMixin, Filter):
     # this class enables query params first_name and territory_id to be used to
@@ -82,7 +91,8 @@ class CustomerFilter(DataclassFilterMixin, Filter):
     territory_id: int = Query(None, description="customer's territory id", ge=1)
 
 
-# Sample Data
+# SAMPLE DATA #################################################################
+
 with S.begin() as session:
     OrmBase.metadata.create_all(bind=session.get_bind())
     session.add(TerritoryOrm(territory_id=1, name="London"))
@@ -91,6 +101,8 @@ with S.begin() as session:
             customer_id=1, first_name="Sherlock", last_name="Holmes", territory_id=1
         )
     )
+
+# RESOURCES ###################################################################
 
 customer_resource = Resource(
     singular_name="customer",
@@ -108,6 +120,8 @@ territory_resource = Resource(
     orm_class=TerritoryOrm,
     model=Territory,
 )
+
+# API AND ROUTES ##############################################################
 
 app = FastAPI(swagger_ui_parameters={"displayOperationId": True})
 app.add_exception_handler(HTTPException, supine_http_exception_handler)

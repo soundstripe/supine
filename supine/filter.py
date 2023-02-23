@@ -15,6 +15,27 @@ def exclude_none(d: list[tuple[str, Any]]) -> dict:
 
 
 class Filter:
+    def __init__(self, /, **kwargs):
+        """
+        The Filter is where you can add query params for filtering lists of Resources. You should
+        subclass the Filter class and implement the modify_query and/or modify_results functions
+        to suit your needs.
+
+        Mixins and dataclasses can make this a lot easier on you!
+
+        To prevent having to write your own __init__ function boilerplate, use the DataclassFilterMixin as follows:
+
+        >>> @dataclasses.dataclass
+        ... class UserFilter(DataclassFilterMixin, Filter):
+        ...     first_name: str = Query(None)  # api users will be able to filter the user list by first name
+
+        SupineRouter uses the Filter.__init__ function as a sub-dependency, so your type hints on that function are
+        passed through to FastAPI as Dependencies
+
+        SupineRouter calls modify_query before executing the query. The incoming query selects all results,
+        so modify_query should return it with filters reflecting the various attributes set during __init__
+        """
+
     @abstractmethod
     def modify_query(self, query: sqlalchemy.Select) -> sqlalchemy.Select:
         return query
@@ -25,6 +46,22 @@ class Filter:
 
 
 class DataclassFilterMixin:
+    """
+    This mixin makes filtering your API queries very simple.
+
+    example for a 'user' Resource:
+
+    >>> @dataclasses.dataclass
+    ... class UserFilter(DataclassFilterMixin, Filter):
+    ...     first_name: str = Query(None)  # api users will be able to filter the user list by first name
+
+    By default, this mixin checks every attribute for equality to the orm instances. If you need to implement,
+    for example, range or wildcard checks, you will need to override modify_query or modify_results.
+
+    modify_query() will be called by SupineRouter prior to executing the select()
+    modify_results() will be called by SupineRouter to modify the list of orm instances after executing the select()
+    """
+
     def modify_query(self, query: sqlalchemy.Select) -> sqlalchemy.Select:
         """
         modifies a SQLAlchemy query using the properties of this dataclass
