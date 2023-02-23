@@ -115,6 +115,7 @@ class SupineRouter(fastapi.routing.APIRouter):
             response_model=resource.result,
             response_model_exclude_unset=True,
             name=f"get_{resource.singular_name}",
+            tags=[resource.plural_name],
         )
         def get_obj(
             request: Request,
@@ -150,6 +151,7 @@ class SupineRouter(fastapi.routing.APIRouter):
             response_model=resource.list_result,
             response_model_exclude_unset=True,
             name=f"get_{resource.plural_name}",
+            tags=[resource.plural_name],
         )
         def get_objects(
             pagination: Pagination = Depends(),
@@ -182,6 +184,7 @@ class SupineRouter(fastapi.routing.APIRouter):
             response_model=resource.result,
             response_model_exclude_unset=True,
             name=f"create_{resource.singular_name}",
+            tags=[resource.plural_name],
         )
         def create_object(
             create_params: resource.create_params = Body(),
@@ -208,6 +211,7 @@ class SupineRouter(fastapi.routing.APIRouter):
             response_model=resource.result,
             response_model_exclude_unset=True,
             name=f"update_{resource.singular_name}",
+            tags=[resource.plural_name],
         )
         def update_object(
             obj: resource.orm_class = Depends(self.make_resource_getter(resource)),
@@ -228,6 +232,7 @@ class SupineRouter(fastapi.routing.APIRouter):
             response_model=ApiResponse,
             response_model_exclude_unset=True,
             name=f"delete_{resource.singular_name}",
+            tags=[resource.plural_name],
         )
         def delete_object(key: int, session: Session = Depends(self.session)):
             obj = session.get(resource.orm_class, key)
