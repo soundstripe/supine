@@ -144,15 +144,12 @@ class SupineRouter(APIRouter):
             if expand:
                 results.update(resource.get_expansion_dict(obj))
 
-            etag = resource.etag(obj)
-            last_modified = resource.last_modified(obj)
-            max_age = resource.max_age
             self.set_cache_headers(
                 request,
                 response,
-                max_age=max_age,
-                etag=etag,
-                last_modified=last_modified,
+                max_age=resource.max_age,
+                etag=resource.etag(obj),
+                last_modified=resource.last_modified(obj),
             )
 
             return resource.result(status=ApiResponseStatus.success, result=results)
