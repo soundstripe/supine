@@ -2,7 +2,7 @@ import abc
 import dataclasses
 from typing import Any
 
-import sqlalchemy
+import sqlalchemy.sql
 
 
 def exclude_none(d: list[tuple[str, Any]]) -> dict:
@@ -37,7 +37,7 @@ class Filter(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def modify_query(self, query: sqlalchemy.Select) -> sqlalchemy.Select:
+    def modify_query(self, query: sqlalchemy.sql.Select) -> sqlalchemy.sql.Select:
         return query
 
 
@@ -58,7 +58,7 @@ class DataclassFilterMixin:
     modify_query() will be called by SupineRouter prior to executing the select()
     """
 
-    def modify_query(self, query: sqlalchemy.Select) -> sqlalchemy.Select:
+    def modify_query(self, query: sqlalchemy.sql.Select) -> sqlalchemy.sql.Select:
         """
         modifies a SQLAlchemy query using the properties of this dataclass
 

@@ -4,15 +4,13 @@ import sqlalchemy.orm
 import uvicorn
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
-from sqlalchemy import StaticPool
-from sqlalchemy.orm import Mapper
+from sqlalchemy.pool import StaticPool
 from starlette.exceptions import HTTPException
 
 from supine.base_model import OrmModeBaseModel
 from supine.exception_handler import supine_http_exception_handler
 from supine.filter import DataclassFilterMixin, Filter
 from supine.resource import Resource
-
 from supine.router import SupineRouter
 
 engine = sqlalchemy.create_engine(
@@ -27,19 +25,17 @@ OrmBase = sqlalchemy.orm.declarative_base()
 
 class TerritoryOrm(OrmBase):
     __tablename__ = "territory"
-    territory_id: Mapper[int] = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    name: Mapper[str] = sqlalchemy.Column(sqlalchemy.String(256))
+    territory_id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String(256))
 
 
 class CustomerOrm(OrmBase):
     __tablename__ = "customer"
 
-    customer_id: Mapper[int] = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    first_name: Mapper[str] = sqlalchemy.Column(sqlalchemy.String(256))
-    last_name: Mapper[str] = sqlalchemy.Column(sqlalchemy.String(256))
-    territory_id: Mapper[int] = sqlalchemy.Column(
-        sqlalchemy.ForeignKey("territory.territory_id")
-    )
+    customer_id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    first_name = sqlalchemy.Column(sqlalchemy.String(256))
+    last_name = sqlalchemy.Column(sqlalchemy.String(256))
+    territory_id = sqlalchemy.Column(sqlalchemy.ForeignKey("territory.territory_id"))
 
     territory = sqlalchemy.orm.relationship(TerritoryOrm)
     territories = sqlalchemy.orm.relationship(
