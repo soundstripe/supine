@@ -2,7 +2,7 @@ import dataclasses
 
 import sqlalchemy.orm
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from sqlalchemy import StaticPool
 from sqlalchemy.orm import Mapper
@@ -74,8 +74,12 @@ class Territory(OrmModeBaseModel):
 
 @dataclasses.dataclass
 class CustomerFilter(DataclassFilterMixin, Filter):
-    first_name: str = None
-    territory_id: int = None
+    # this class enables query params first_name and territory_id to be used to
+    # filter REST calls getting a list of customers
+    # The Mixin automatically filters the generated SQLAlchemy query, but you can
+    # override the filter_query() function to provide custom SQL tweaking
+    first_name: str = Query(None, description="customer's first name", max_length=255)
+    territory_id: int = Query(None, description="customer's territory id", ge=1)
 
 
 # Sample Data
@@ -109,15 +113,19 @@ app = FastAPI(swagger_ui_parameters={"displayOperationId": True})
 app.add_exception_handler(HTTPException, supine_http_exception_handler)
 
 supine_router = SupineRouter(sqlalchemy_sessionmaker=S)
+
+# the variable names here are just a convention, making it easy to find these routes later
 get_customer = supine_router.include_get_resource_by_id(customer_resource)
 get_customers = supine_router.include_get_resource_list(customer_resource)
 create_customer = supine_router.include_create_resource(customer_resource)
 update_customer = supine_router.include_update_resource(customer_resource)
 delete_customer = supine_router.include_delete_resource(customer_resource)
+
 # even shorter shorthand for the above 5 lines:
 # get_customer, get_customers, create_customer, update_customer, delete_customer = (
 #   supine_router.include_crud(customer_resource)
 # )
+
 get_territory = supine_router.include_get_resource_by_id(territory_resource)
 get_territories = supine_router.include_get_resource_list(territory_resource)
 
