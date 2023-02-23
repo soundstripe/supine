@@ -34,10 +34,10 @@ class Resource:
         SupineRouter can use this resource to generate CRUD routes
 
         :param singular_name: example 'territory', used to generate url paths and messages for this resource
-            will be registered in a dict, so must be unique among all Resources in this project
 
         :param plural_name: example 'territories' used to generate messages and
-            to access relationships to this resource
+            to access relationships to this resource. will be registered in a dict, so must be unique among
+            all Resources in this project
 
         :param orm_class: the SQLAlchemy database model for this resource
 
@@ -75,16 +75,26 @@ class Resource:
         self.etag_attr = etag_attr
         self.last_modified_attr = last_modified_attr
         self.max_age = max_age
-        self.register()
-
-    def register(self):
-        resource_key = self.plural_name
-        if resource_key in _resource_registry:
-            warnings.warn(f"Resource {resource_key} already registered -- overwriting")
-        _resource_registry[resource_key] = self
+        self._register()
 
     @cached_property
     def result(self):
+        """
+        An APIResponse wrapping a single `.model` to be used as a response_model for FastAPI routes
+
+        Example JSON response for a 'document' Resource
+        (in this example, .expansions has a single additional resource, w/plural name `document_categories`)
+        {
+            'status': 'success',
+            'result': {
+                'document': {...},
+                'document_categories': [
+                    {...},
+                    {...},
+                ]
+            }
+        }
+        """
         model = create_model(
             self.model.__name__ + "Result",
             __base__=BaseModel,
@@ -98,6 +108,22 @@ class Resource:
 
     @cached_property
     def list_result(self):
+        """
+        A PaginatedResponse wrapping a list of `.model`s to be used as a response_model for FastAPI routes
+
+        Example JSON response for a list of 'document' Resources
+        {
+            'status': 'success',
+            'result': {
+                'documents': [{...}, {...}, ...]
+            },
+            'pagination': {
+                'start': 0,
+                'count': 100,
+                'total': 2726
+            }
+        }
+        """
         model = create_model(
             self.model.__name__ + "ListResult",
             __base__=BaseModel,
@@ -108,6 +134,8 @@ class Resource:
     @cached_property
     def expansions(self):
         """
+        Returns the list of Resource objects that can be expanded on this Resource
+
         lazy-evaluates strings in the expansion list by looking them up in the resource registry
         """
         return [
@@ -138,12 +166,26 @@ class Resource:
         return getattr(orm_instance, self.last_modified_attr)
 
     def expansion_joinedloads(self):
+        """
+        Returns sqlalchemy joinedload() list for all possible expansions. Mostly meant for use in SupineRouter,
+        to enable a single query looking up all attributes when querying by key.
+        """
         # generate a single query for each specified resource expansion attribute
         # getattr(orm_class, expansion.plural_name) should return a sqlalchemy relationship()
         joined_loads = (
             joinedloads(self.orm_class, exp.plural_name) for exp in self.expansions
         )
         return list(chain.from_iterable(joined_loads))
+
+    def _register(self):
+        """
+        Internal use only. Registers the plural name of this Resource so that we can use lazy evaluation to avoid
+        circular reference issues
+        """
+        resource_key = self.plural_name
+        if resource_key in _resource_registry:
+            warnings.warn(f"Resource {resource_key} already registered -- overwriting")
+        _resource_registry[resource_key] = self
 
 
 def joinedloads(orm_class, attr_or_name):
