@@ -135,7 +135,7 @@ class SupineRouter(APIRouter):
             request: Request,
             response: Response,
             orm_instance: resource.orm_class = Depends(
-                self.make_resource_getter(resource)
+                self.orm_instance_getter_factory(resource)
             ),
             expand: bool = Query(
                 False,
@@ -228,7 +228,7 @@ class SupineRouter(APIRouter):
         )
         def update_object(
             orm_instance: resource.orm_class = Depends(
-                self.make_resource_getter(resource)
+                self.orm_instance_getter_factory(resource)
             ),
             update_params: resource.update_params = Body(),
             session: Session = Depends(self.session),
@@ -260,10 +260,11 @@ class SupineRouter(APIRouter):
             session.commit()
             return ApiResponse(status=ApiResponseStatus.success)
 
-    def make_resource_getter(self, resource: Resource):
+    def orm_instance_getter_factory(self, resource: Resource):
         """
-        Returns a Depends() compatible function for getting a single SQLAlchemy instance by
-        its primary key. Uses SQLAlchemy's session.get().
+        Returns a Depends()-compatible function for getting a single SQLAlchemy instance by
+        its primary key. Uses the session created by .sqlalchemy_sessionmaker, fetches the instance
+        by using SQLAlchemy's session.get().
 
         First-level relationship()s on the SQLAlchemy classes will be loaded with a join automatically
         if the expand parameter is set on the request.
