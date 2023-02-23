@@ -69,7 +69,7 @@ class Resource:
         self.create_params = create_params
         self.update_params = update_params
         self.query_filter = query_filter or null_filter
-        self.expansions = expansions or []
+        self._expansions = expansions or []
         self.etag_attr = etag_attr
         self.last_modified_attr = last_modified_attr
         self.max_age = max_age
@@ -88,10 +88,7 @@ class Resource:
             __base__=BaseModel,
             **{
                 self.singular_name: (self.model, ...),
-                **{
-                    exp.plural_name: (List[exp.model], None)
-                    for exp in self.runtime_expansions
-                },
+                **{exp.plural_name: (List[exp.model], None) for exp in self.expansions},
             },
         )
         model.__doc__ = self.model.__doc__
@@ -107,23 +104,23 @@ class Resource:
         return PaginatedResponse[model]
 
     @cached_property
-    def runtime_expansions(self):
+    def expansions(self):
         """
         lazy-evaluates strings in the expansion list by looking them up in the resource registry
         """
         return [
             exp if isinstance(exp, Resource) else _resource_registry[exp]
-            for exp in self.expansions
+            for exp in self._expansions
         ]
 
     def get_expansion_dict(self, orm_instance) -> dict[str, list]:
         """
-        given a Resource definition and an ORM instance, return a dict of
+        given an ORM instance, return a dict of
         expansion.plural_name to matching orm attribute
         """
         return {
             expansion.plural_name: getattr(orm_instance, expansion.plural_name)
-            for expansion in self.runtime_expansions
+            for expansion in self.expansions
         }
 
     def etag(self, orm_instance) -> str:

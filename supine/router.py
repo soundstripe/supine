@@ -282,7 +282,7 @@ class SupineRouter(APIRouter):
                 expansion_loader_options = list(
                     chain.from_iterable(
                         generate_joinedloads(resource.orm_class, exp.plural_name)
-                        for exp in resource.runtime_expansions
+                        for exp in resource.expansions
                     )
                 )
             obj = session.get(resource.orm_class, key, options=expansion_loader_options)
