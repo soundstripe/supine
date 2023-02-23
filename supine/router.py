@@ -127,12 +127,7 @@ class SupineRouter(fastapi.routing.APIRouter):
         ):
             results = {resource.singular_name: obj}
             if expand:
-                results.update(
-                    {
-                        expansion.plural_name: getattr(obj, expansion.plural_name)
-                        for expansion in resource.runtime_expansions
-                    }
-                )
+                results.update(resource._get_expansion_dict(obj))
 
             etag = getattr(obj, resource.etag_attr) if resource.etag_attr else None
             last_modified = (

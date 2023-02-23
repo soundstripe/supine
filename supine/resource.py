@@ -107,10 +107,23 @@ class Resource:
 
     @cached_property
     def runtime_expansions(self):
+        """
+        lazy-evaluates strings in the expansion list by looking them up in the resource registry
+        """
         return [
             exp if isinstance(exp, Resource) else _resource_registry[exp]
             for exp in self.expansions
         ]
+
+    def _get_expansion_dict(self, orm_instance):
+        """
+        given a Resource definition and an ORM instance, return a dict of
+        expansion.plural_name to matching orm attribute
+        """
+        return {
+            expansion.plural_name: getattr(orm_instance, expansion.plural_name)
+            for expansion in self.runtime_expansions
+        }
 
 
 def null_filter():
