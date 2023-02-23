@@ -1,6 +1,7 @@
 import warnings
 from datetime import datetime
 from enum import Enum
+from functools import lru_cache
 from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
 
@@ -39,6 +40,16 @@ def supine_generate_unique_id(route: APIRoute):
     Be careful with your Resource naming.
     """
     return f"{route.name}"
+
+
+# noinspection PyPep8Naming
+@lru_cache
+def QueryExpand():
+    """Helper to reuse the documentation/defaults for the `expand: bool` parameter"""
+    return Query(
+        default=False,
+        description="If true, related objects will be returned along with the primary result.",
+    )
 
 
 class SupineRouter(APIRouter):
@@ -124,6 +135,15 @@ class SupineRouter(APIRouter):
             response.headers["last-modified"] = last_modified
 
     def include_get_resource_by_id(self, resource: Resource):
+        """
+        Adds a route at `/get_<singular_name>/{key}` which will return the single object of type resource.orm_class,
+        as specified by the primary key. Query parameter ?expand=1 will cause additional related items to be returned
+        along with the single object.
+
+        :param resource: Resource, specifying the .orm_class and response .model
+        :return: the added route
+        """
+
         @self.get(
             f"/{resource.singular_name}/{{key}}",
             response_model=resource.result,
@@ -137,10 +157,7 @@ class SupineRouter(APIRouter):
             orm_instance: resource.orm_class = Depends(
                 self.orm_instance_getter_factory(resource)
             ),
-            expand: bool = Query(
-                False,
-                description="If true, related objects will be returned along with the primary result.",
-            ),
+            expand: bool = QueryExpand(),
         ):
             results = {resource.singular_name: orm_instance}
             if expand:
@@ -274,7 +291,7 @@ class SupineRouter(APIRouter):
 
         def inner(
             key: int,
-            expand: bool = Query(False),
+            expand: bool = QueryExpand(),
             session: Session = Depends(self.session),
         ):
             query_options = []
