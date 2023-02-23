@@ -1,20 +1,20 @@
 [tool.poetry]
 name = "supine"
 version = "0.1.0"
-description = ""
+description = "Opinionated FastAPI/SQLAlchemy helpers for lazy coders who just want to REST."
 authors = ["Steven James <sjames@waitforitjames.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
 pydantic = "^1.10.5"
-fastapi = "^0.92.0"
-sqlalchemy = "^2.0.4"
+fastapi = "^0.87.0"
+sqlalchemy = ">=1.4"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
-fastapi = "^0.92.0"
+fastapi = "^0.87.0"
 uvicorn = "^0.20.0"
 pre-commit = "^3.0.4"
 httpx = "^0.23.3"
