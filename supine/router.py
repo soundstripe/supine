@@ -24,6 +24,8 @@ from supine.filter import DataclassFilterMixin
 from supine.pagination import Pagination
 from supine.resource import Resource
 
+RFC9110_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"
+
 
 class SupineRouter(fastapi.routing.APIRouter):
     def __init__(
@@ -92,8 +94,7 @@ class SupineRouter(fastapi.routing.APIRouter):
         last_modified: datetime = None,
     ):
         if last_modified:
-            rfc9110_date = "%a, %d %b %Y %H:%M:%S GMT"
-            last_modified = last_modified.strftime(rfc9110_date)
+            last_modified = last_modified.strftime(RFC9110_DATE_FORMAT)
 
         if etag and request.headers.get("if-none-match", None) == etag:
             raise HTTPException(HTTP_304_NOT_MODIFIED)
