@@ -129,12 +129,8 @@ class SupineRouter(fastapi.routing.APIRouter):
             if expand:
                 results.update(resource._get_expansion_dict(obj))
 
-            etag = getattr(obj, resource.etag_attr) if resource.etag_attr else None
-            last_modified = (
-                getattr(obj, resource.last_modified_attr)
-                if resource.last_modified_attr
-                else None
-            )
+            etag = resource.etag(obj)
+            last_modified = resource.last_modified(obj)
             max_age = resource.max_age
             self.set_cache_headers(
                 request,

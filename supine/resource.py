@@ -1,4 +1,5 @@
 import warnings
+from datetime import datetime
 from functools import cached_property
 from typing import List, Type, Union
 
@@ -115,7 +116,7 @@ class Resource:
             for exp in self.expansions
         ]
 
-    def _get_expansion_dict(self, orm_instance):
+    def _get_expansion_dict(self, orm_instance) -> dict[str, list]:
         """
         given a Resource definition and an ORM instance, return a dict of
         expansion.plural_name to matching orm attribute
@@ -124,6 +125,18 @@ class Resource:
             expansion.plural_name: getattr(orm_instance, expansion.plural_name)
             for expansion in self.runtime_expansions
         }
+
+    def etag(self, orm_instance) -> str:
+        """return resource etag given an orm_class instance"""
+        if self.etag_attr is None:
+            return None
+        return getattr(orm_instance, self.etag_attr)
+
+    def last_modified(self, orm_instance) -> datetime:
+        """return resource last modified datetime given an orm_class instance"""
+        if self.last_modified_attr is None:
+            return None
+        return getattr(orm_instance, self.last_modified_attr)
 
 
 def null_filter():
