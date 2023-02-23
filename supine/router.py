@@ -276,17 +276,11 @@ class SupineRouter(APIRouter):
             expand: bool = Query(False),
             session: Session = Depends(self.session),
         ):
-            expansion_loader_options = []
+            query_options = []
             if expand:
-                # generate a single query for each specified resource expansion attribute
-                # getattr(orm_class, expansion.plural_name) should return a sqlalchemy relationship()
-                expansion_loader_options = list(
-                    chain.from_iterable(
-                        generate_joinedloads(resource.orm_class, exp.plural_name)
-                        for exp in resource.expansions
-                    )
-                )
-            obj = session.get(resource.orm_class, key, options=expansion_loader_options)
+                query_options = resource.expansion_joinedloads()
+
+            obj = session.get(resource.orm_class, key, options=query_options)
             if obj is None:
                 raise HTTPException(
                     HTTP_404_NOT_FOUND, f"specified {resource.singular_name} not found"
@@ -294,21 +288,3 @@ class SupineRouter(APIRouter):
             return obj
 
         return inner
-
-
-def generate_joinedloads(orm_class, attr_or_name):
-    """
-    if attr_or_name represents at least one relationship, generates joinedload() query options to load
-    the relationship(s)
-    """
-    attr = attr_or_name
-    if isinstance(attr_or_name, str):
-        attr = getattr(orm_class, attr_or_name, None)
-    if isinstance(attr, InstrumentedAttribute):
-        # single relationship()
-        yield joinedload(attr)
-    elif getattr(attr, "is_attribute", False):
-        # hybrid_property with one or more relationship()s
-        yield from chain.from_iterable(generate_joinedloads(orm_class, a) for a in attr)
-    else:
-        warnings.warn(f"could not emit joinedload() for {orm_class}.{attr_or_name}")

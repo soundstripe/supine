@@ -1,9 +1,11 @@
 import warnings
 from datetime import datetime
 from functools import cached_property
+from itertools import chain
 from typing import List, Type, Union
 
 from pydantic import BaseModel, create_model
+from sqlalchemy.orm import InstrumentedAttribute, joinedload
 
 from supine.api_response import ApiResponse, PaginatedResponse
 from supine.filter import Filter
@@ -134,6 +136,34 @@ class Resource:
         if self.last_modified_attr is None:
             return None
         return getattr(orm_instance, self.last_modified_attr)
+
+    def expansion_joinedloads(self):
+        # generate a single query for each specified resource expansion attribute
+        # getattr(orm_class, expansion.plural_name) should return a sqlalchemy relationship()
+        joined_loads = (
+            joinedloads(self.orm_class, exp.plural_name) for exp in self.expansions
+        )
+        return list(chain.from_iterable(joined_loads))
+
+
+def joinedloads(orm_class, attr_or_name):
+    """
+    if attr_or_name represents at least one relationship, generates joinedload() query options to load
+    the relationship(s)
+
+    calls itself recursively if the attr_or_name represents a list
+    """
+    attr = attr_or_name
+    if isinstance(attr_or_name, str):
+        attr = getattr(orm_class, attr_or_name, None)
+    if isinstance(attr, InstrumentedAttribute):
+        # single relationship()
+        yield joinedload(attr)
+    elif getattr(attr, "is_attribute", False):
+        # hybrid_property with one or more relationship()s
+        yield from chain.from_iterable(joinedloads(orm_class, a) for a in attr)
+    else:
+        warnings.warn(f"could not emit joinedload() for {orm_class}.{attr_or_name}")
 
 
 def null_filter():
