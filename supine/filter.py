@@ -1,5 +1,5 @@
+import abc
 import dataclasses
-from abc import abstractmethod
 from typing import Any
 
 import sqlalchemy
@@ -14,12 +14,11 @@ def exclude_none(d: list[tuple[str, Any]]) -> dict:
     return {k: v for (k, v) in d if v is not None and k[0] != "_"}
 
 
-class Filter:
+class Filter(metaclass=abc.ABCMeta):
     def __init__(self, /, **kwargs):
         """
         The Filter is where you can add query params for filtering lists of Resources. You should
-        subclass the Filter class and implement the modify_query and/or modify_results functions
-        to suit your needs.
+        subclass the Filter class and implement the modify_query function to suit your needs.
 
         Mixins and dataclasses can make this a lot easier on you!
 
@@ -33,33 +32,30 @@ class Filter:
         passed through to FastAPI as Dependencies
 
         SupineRouter calls modify_query before executing the query. The incoming query selects all results,
-        so modify_query should return it with filters reflecting the various attributes set during __init__
+        so modify_query should modify and return it with filters reflecting the various attributes set on the Filter
+        during __init__
         """
 
-    @abstractmethod
+    @abc.abstractmethod
     def modify_query(self, query: sqlalchemy.Select) -> sqlalchemy.Select:
         return query
-
-    @abstractmethod
-    def modify_results(self, results: list) -> list:
-        return results
 
 
 class DataclassFilterMixin:
     """
-    This mixin makes filtering your API queries very simple.
+    This mixin makes filtering your API queries very simple. Specify this Mixin BEFORE the Filter class in your
+    class's inheritance.
 
     example for a 'user' Resource:
 
     >>> @dataclasses.dataclass
-    ... class UserFilter(DataclassFilterMixin, Filter):
+    ... class UserFilter(DataclassFilterMixin, Filter):  # Mixin BEFORE Filter
     ...     first_name: str = Query(None)  # api users will be able to filter the user list by first name
 
     By default, this mixin checks every attribute for equality to the orm instances. If you need to implement,
-    for example, range or wildcard checks, you will need to override modify_query or modify_results.
+    for example, range or wildcard checks, you will need to override modify_query.
 
     modify_query() will be called by SupineRouter prior to executing the select()
-    modify_results() will be called by SupineRouter to modify the list of orm instances after executing the select()
     """
 
     def modify_query(self, query: sqlalchemy.Select) -> sqlalchemy.Select:
@@ -74,10 +70,6 @@ class DataclassFilterMixin:
         # noinspection PyDataclass
         filter_by_args = dataclasses.asdict(self, dict_factory=exclude_none)
         return query.filter_by(**filter_by_args)
-
-    # noinspection PyMethodMayBeStatic
-    def modify_results(self, results: list) -> list:
-        return results
 
     def __init__(self):
         if not getattr(self, "__fields__", None):

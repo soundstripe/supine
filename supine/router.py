@@ -192,8 +192,6 @@ class SupineRouter(APIRouter):
             if query_filter is not None:
                 query = query_filter.modify_query(query)
             orm_instances = pagination.fetch_paginated(session, query)
-            if query_filter is not None:
-                orm_instances = query_filter.modify_results(orm_instances)
 
             return resource.list_result(
                 status=ApiResponseStatus.success,
