@@ -306,3 +306,12 @@ class SupineRouter(APIRouter):
             return obj
 
         return inner
+
+    def include_crud(self, resource: Resource):
+        return (
+            self.include_get_resource_by_id(resource),
+            self.include_get_resource_list(resource),
+            self.include_create_resource(resource),
+            self.include_update_resource(resource),
+            self.include_delete_resource(resource),
+        )

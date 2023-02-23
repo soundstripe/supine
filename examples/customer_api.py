@@ -114,6 +114,10 @@ get_customers = supine_router.include_get_resource_list(customer_resource)
 create_customer = supine_router.include_create_resource(customer_resource)
 update_customer = supine_router.include_update_resource(customer_resource)
 delete_customer = supine_router.include_delete_resource(customer_resource)
+# even shorter shorthand for the above 5 lines:
+# get_customer, get_customers, create_customer, update_customer, delete_customer = (
+#   supine_router.include_crud(customer_resource)
+# )
 get_territory = supine_router.include_get_resource_by_id(territory_resource)
 get_territories = supine_router.include_get_resource_list(territory_resource)
 
