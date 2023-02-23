@@ -9,7 +9,6 @@ from fastapi.datastructures import Default
 from fastapi.routing import APIRoute, APIRouter
 from sqlalchemy import select
 from sqlalchemy.orm import InstrumentedAttribute, joinedload, Session
-from starlette import routing
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import BaseRoute
@@ -52,7 +51,7 @@ class SupineRouter(APIRouter):
         default_response_class: Type[Response] = Default(JSONResponse),
         responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         callbacks: Optional[List[BaseRoute]] = None,
-        routes: Optional[List[routing.BaseRoute]] = None,
+        routes: Optional[List[BaseRoute]] = None,
         redirect_slashes: bool = True,
         default: Optional[ASGIApp] = None,
         dependency_overrides_provider: Optional[Any] = None,
