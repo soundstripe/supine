@@ -116,7 +116,7 @@ class Resource:
             for exp in self.expansions
         ]
 
-    def _get_expansion_dict(self, orm_instance) -> dict[str, list]:
+    def get_expansion_dict(self, orm_instance) -> dict[str, list]:
         """
         given a Resource definition and an ORM instance, return a dict of
         expansion.plural_name to matching orm attribute

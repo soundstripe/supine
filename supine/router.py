@@ -142,7 +142,7 @@ class SupineRouter(APIRouter):
         ):
             results = {resource.singular_name: obj}
             if expand:
-                results.update(resource._get_expansion_dict(obj))
+                results.update(resource.get_expansion_dict(obj))
 
             etag = resource.etag(obj)
             last_modified = resource.last_modified(obj)
