@@ -94,7 +94,6 @@ class SupineRouter(fastapi.routing.APIRouter):
         if last_modified:
             rfc9110_date = "%a, %d %b %Y %H:%M:%S GMT"
             last_modified = last_modified.strftime(rfc9110_date)
-            print(last_modified)
 
         if etag and request.headers.get("if-none-match", None) == etag:
             raise HTTPException(HTTP_304_NOT_MODIFIED)
