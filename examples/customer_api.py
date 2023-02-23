@@ -105,7 +105,7 @@ territory_resource = Resource(
     model=Territory,
 )
 
-app = FastAPI()
+app = FastAPI(swagger_ui_parameters={"displayOperationId": True})
 app.add_exception_handler(HTTPException, supine_http_exception_handler)
 
 supine_router = SupineRouter(sqlalchemy_sessionmaker=S)

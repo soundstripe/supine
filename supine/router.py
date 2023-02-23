@@ -1,15 +1,12 @@
-import hashlib
 import warnings
 from datetime import datetime
 from enum import Enum
 from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
 
-import fastapi.routing
 from fastapi import Body, Depends, HTTPException, params, Query
 from fastapi.datastructures import Default
-from fastapi.routing import APIRoute
-from fastapi.utils import generate_unique_id
+from fastapi.routing import APIRoute, APIRouter
 from sqlalchemy import select
 from sqlalchemy.orm import InstrumentedAttribute, joinedload, Session
 from starlette import routing
@@ -27,7 +24,25 @@ from supine.resource import Resource
 RFC9110_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"
 
 
-class SupineRouter(fastapi.routing.APIRouter):
+def supine_generate_unique_id(route: APIRoute):
+    """
+    Simplify operation IDs so that generated API clients have simpler function names.
+
+    If you are using a Resource your operation ids will be based on the singular name:
+      Example: singular_name='product'
+          get_product
+          get_products
+          create_product
+          update_product
+          delete_product
+
+    Note this function does no name scoping, and so is prone to collisions.
+    Be careful with your Resource naming.
+    """
+    return f"{route.name}"
+
+
+class SupineRouter(APIRouter):
     def __init__(
         self,
         *,
@@ -46,9 +61,9 @@ class SupineRouter(fastapi.routing.APIRouter):
         on_shutdown: Optional[Sequence[Callable[[], Any]]] = None,
         deprecated: Optional[bool] = None,
         include_in_schema: bool = True,
-        generate_unique_id_function: Callable[[APIRoute], str] = Default(
-            generate_unique_id
-        ),
+        generate_unique_id_function: Callable[
+            [APIRoute], str
+        ] = supine_generate_unique_id,
         sqlalchemy_sessionmaker=None,
     ) -> None:
         self.sqlalchemy_sessionmaker = sqlalchemy_sessionmaker
